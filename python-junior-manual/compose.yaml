@@ -1,0 +1,11 @@
+services:
+  api:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      TASK_DB_PATH: /opt/app/data/tasks.sqlite3
+    volumes:
+      - task-data:/opt/app/data
+volumes:
+  task-data:
