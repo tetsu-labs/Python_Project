@@ -10,6 +10,7 @@
 - [x] SQLite送金トランザクション（テスト12件）
 - [x] pandas売上分析（テスト8件）
 - [x] asyncio並列数制限（テスト5件）
+- [x] ネットワーク障害ログ解析CLI（新規テスト14件、CI検証待ち）
 - [x] GitHub ActionsにPython 3.12/3.13のpytest、Ruff、DockerビルドとHTTP疎通チェックを定義
 
 ## 検証の実績と限界
@@ -21,6 +22,8 @@
 - GitHub Actionsはワークフローを更新したが、APIから実行成功を確認できていない。**設定済み≠成功確認済み**。
 
 ## 最優先：CI結果の確認
+- 2026-11-24、ユーザー提供のGitHub Actions画面で #18（main、41秒）成功を確認。ただし個別ジョブ・テスト件数は画面から未確認。
+- 障害ログ解析の新規テスト14件を追加したため、最新コミットでのCI再確認が必要。
 1. [ ] [GitHub Actions](https://github.com/tetsu-labs/Python_Project/actions/workflows/python-junior-manual.yml)で最新コミットの実行を確認する。
 2. [ ] 失敗があればログを取得して修正し、全60件とRuffとDockerの成功を確認する。
 3. [ ] CIで成功したコミットSHAとテスト件数を記録する。
