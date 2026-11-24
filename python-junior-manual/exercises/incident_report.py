@@ -9,6 +9,8 @@ from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 
+from exercises.incident_triage import build_report, save_report
+
 SEVERITIES = {'INFO', 'WARNING', 'CRITICAL'}
 
 
@@ -55,8 +57,17 @@ def analyze(path: Path) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description='Analyze network incident JSONL')
     parser.add_argument('input', type=Path)
+    parser.add_argument('--evidence', type=Path, help='Write deterministic triage and runbook JSON')
     args = parser.parse_args()
-    print(json.dumps(analyze(args.input), ensure_ascii=False, indent=2))
+    summary = analyze(args.input)
+    if args.evidence is not None:
+        events = []
+        with args.input.open(encoding='utf-8-sig') as handle:
+            for line in handle:
+                if line.strip():
+                    events.append(json.loads(line))
+        save_report(build_report(events, source=str(args.input)), args.evidence)
+    print(json.dumps(summary, ensure_ascii=False, indent=2))
 
 
 if __name__ == '__main__':
