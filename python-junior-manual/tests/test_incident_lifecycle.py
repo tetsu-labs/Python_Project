@@ -54,7 +54,7 @@ def test_fingerprint_is_deterministic():
 
 def test_timestamp_order():
     with pytest.raises(ValueError):
-        step(init(), "TRIAGED", 0)
+        advance(init(), "TRIAGED", timestamp="2026-11-23T23:59:00Z", operator="analyst", evidence="log")
 
 
 @pytest.mark.parametrize("value", ["2026-11-24", "nonsense", ""])
