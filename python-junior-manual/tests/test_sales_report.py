@@ -1,4 +1,3 @@
-import pandas as pd
 import pytest
 from exercises.sales_report import analyze_sales
 
