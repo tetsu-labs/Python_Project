@@ -60,3 +60,20 @@ Docker環境を使う場合は、演習2のみ `docker compose up --build` で�
 ## セキュリティ
 
 このAPIには認証・認可・レート制限がありません。**インターネットへ直接公開しないでください。** SQLiteへのアクセスはパラメータ化クエリを利用しますが、本番利用には追加の設計が必要です。
+
+## ネットワーク障害対応CLI（SQLite + 証跡レポート）
+
+この演習は**障害対応を記録する訓練用ツール**です。実機へのログイン・設定変更・復旧コマンド実行はしません。すべての操作はローカルのSQLiteファイルに保存されます。
+
+```bash
+cd python-junior-manual
+python -m exercises.incident_cli --db incidents.sqlite init INC-001 --operator alice
+python -m exercises.incident_cli --db incidents.sqlite advance INC-001 TRIAGED --operator alice --evidence "show ip ospf neighbor: down"
+python -m exercises.incident_cli --db incidents.sqlite advance INC-001 RECOVERY_PENDING --operator alice --evidence "change ticket CHG-001 approved" --approved
+python -m exercises.incident_cli --db incidents.sqlite advance INC-001 RECOVERED --operator alice --evidence "neighbor FULL confirmed"
+python -m exercises.incident_cli --db incidents.sqlite advance INC-001 CLOSED --operator alice --evidence "monitoring stable" --approved
+python -m exercises.incident_cli --db incidents.sqlite report INC-001 --output reports/INC-001.md
+python -m pytest -q tests/test_incident_cli.py
+```
+
+状態遷移の妥当性・承認フラグ・時刻順を検証し、報告書にSHA-256を記載します。**承認フラグは実際の本人認証・承認ワークフローではありません。** 運用環境への投入には認証、アクセス制御、バックアップ、監査証跡の改ざん対策が必要です。
