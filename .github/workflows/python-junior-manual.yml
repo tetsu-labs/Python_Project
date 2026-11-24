@@ -1,4 +1,5 @@
-name: Python junior manual tests
+name: Python junior manual quality gates
+
 on:
   push:
     paths:
@@ -8,9 +9,18 @@ on:
     paths:
       - 'python-junior-manual/**'
       - '.github/workflows/python-junior-manual.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
 jobs:
   tests:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.12', '3.13']
     defaults:
       run:
         working-directory: python-junior-manual
@@ -18,10 +28,41 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            python-junior-manual/requirements.txt
+            python-junior-manual/requirements-dev.txt
       - name: Install
         run: python -m pip install -r requirements-dev.txt
-      - name: Compile
+      - name: Syntax check
         run: python -m compileall -q app exercises tests
-      - name: Tests
+      - name: Ruff critical errors and unused imports
+        run: python -m ruff check --select E4,E7,E9,F app exercises tests
+      - name: Pytest
         run: python -m pytest -q
+
+  docker:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: python-junior-manual
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build container
+        run: docker build -t python-junior-manual:ci .
+      - name: Start and smoke-test API
+        run: |
+          docker run -d --name junior-api -p 127.0.0.1:18080:8000 python-junior-manual:ci
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:18080/health > /tmp/junior-health.json; then
+              python -c 'import json; assert json.load(open("/tmp/junior-health.json")) == {"status": "ok"}'
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs junior-api
+          exit 1
+      - name: Cleanup
+        if: always()
+        run: docker rm -f junior-api || true
