@@ -70,3 +70,20 @@ def test_cli_end_to_end(tmp_path, capsys):
                  "--operator", "alice", "--evidence", "show command output"]) == 0
     assert main(["--db", str(db), "report", "INC-7", "--output", str(output)]) == 0
     assert "TRIAGED" in output.read_text(encoding="utf-8")
+
+
+def test_cli_audit_detects_database_tampering(tmp_path):
+    import sqlite3
+    from exercises.incident_audit import verify
+    from exercises.incident_cli import connect
+
+    db = tmp_path / "audit.db"
+    create(db, "INC-A", "alice", "2026-11-24T00:00:00Z")
+    update(db, "INC-A", "TRIAGED", "alice", "show command output",
+           timestamp="2026-11-24T00:01:00Z")
+    with connect(db) as conn:
+        assert verify(conn, "INC-A")["valid"] is True
+    assert main(["--db", str(db), "verify", "INC-A"]) == 0
+    with sqlite3.connect(db) as conn:
+        conn.execute("UPDATE incident_audit SET payload = '{}' WHERE seq = 1")
+    assert main(["--db", str(db), "verify", "INC-A"]) == 1
