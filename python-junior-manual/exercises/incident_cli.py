@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from exercises.incident_lifecycle import advance, fingerprint, start
+from exercises.incident_audit import append, verify
 
 
 def now() -> str:
@@ -33,6 +34,7 @@ def create(db: Path, incident_id: str, operator: str, timestamp: str | None = No
     with connect(db) as conn:
         conn.execute("INSERT INTO incidents (id, revision, payload) VALUES (?, 1, ?)",
                      (incident_id, json.dumps(record, ensure_ascii=False)))
+        append(conn, record)
     return record
 
 
@@ -57,6 +59,7 @@ def update(db: Path, incident_id: str, state: str, operator: str, evidence: str,
                           operator=operator, evidence=evidence, approved=approved)
         conn.execute("UPDATE incidents SET revision = ?, payload = ? WHERE id = ?",
                      (row[0] + 1, json.dumps(updated, ensure_ascii=False), incident_id))
+        append(conn, updated)
         conn.commit()
         return updated
     except BaseException:
@@ -102,10 +105,17 @@ def main(argv: list[str] | None = None) -> int:
     change.add_argument("--approved", action="store_true")
     show = commands.add_parser("show")
     show.add_argument("incident_id")
+    audit = commands.add_parser("verify")
+    audit.add_argument("incident_id")
     report = commands.add_parser("report")
     report.add_argument("incident_id")
     report.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
+    if args.command == "verify":
+        with connect(args.db) as conn:
+            result = verify(conn, args.incident_id)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 0 if result["valid"] else 1
     if args.command == "init":
         result = create(args.db, args.incident_id, args.operator)
     elif args.command == "advance":
