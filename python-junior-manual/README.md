@@ -88,3 +88,12 @@ python -m pytest -q tests/test_incident_import.py
 ```
 
 生成された`LOG-...`チケットは`incident_cli show`、`advance`、`verify`、`report`で管理できます。イベント同一性は内容のハッシュに基づきます。同じログを再送した場合の重複排除には対応しますが、異なる日時に繰り返された同一障害を同じインシデントに統合する機能はありません。複数プロセスによる同時登録や監査保全については本番用の設計が別途必要です。
+
+## 障害対応KPI（MTTR・未解決件数）
+
+```bash
+python -m exercises.incident_metrics --db incidents.sqlite
+python -m pytest -q tests/test_incident_metrics.py
+```
+
+`mttr_minutes`は、`DETECTED`から最初の`RECOVERED`までの経過分数の算術平均です。復旧していない障害と切り戻しのみの障害はMTTRの分母に含めません。未解決一覧は`CLOSED`、`RECOVERED`、`ROLLED_BACK`以外の状態を対象とします。これは学習用の定義であり、組織ごとのSLAや復旧時間の定義とは異なる可能性があります。再発率・機器別の集計は現行チケットに構造化された機器IDがないため未実装です。
