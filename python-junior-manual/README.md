@@ -77,3 +77,14 @@ python -m pytest -q tests/test_incident_cli.py
 ```
 
 状態遷移の妥当性・承認フラグ・時刻順を検証し、報告書にSHA-256を記載します。**承認フラグは実際の本人認証・承認ワークフローではありません。** 運用環境への投入には認証、アクセス制御、バックアップ、監査証跡の改ざん対策が必要です。
+
+## CRITICALログの自動チケット化
+
+`incident_report.py`と同じ形式のJSONLから重大障害だけをSQLiteに登録します。入力ファイル全体を先に検証し、同じ日時・機器・重大度・メッセージの重複イベントは再登録しません。
+
+```bash
+python -m exercises.incident_import incidents.jsonl --db incidents.sqlite
+python -m pytest -q tests/test_incident_import.py
+```
+
+生成された`LOG-...`チケットは`incident_cli show`、`advance`、`verify`、`report`で管理できます。イベント同一性は内容のハッシュに基づきます。同じログを再送した場合の重複排除には対応しますが、異なる日時に繰り返された同一障害を同じインシデントに統合する機能はありません。複数プロセスによる同時登録や監査保全については本番用の設計が別途必要です。
